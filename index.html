@@ -1,296 +1,173 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SimpleChat — текстовый чат</title>
-  <style>
-    :root{
-      --bg:#0f1724; /* dark */
-      --panel:#0b1220;
-      --muted:#94a3b8;
-      --accent:#4f46e5;
-      --msg-me:#1f2937;
-      --msg-friend:#0b1220;
-      --glass: rgba(255,255,255,0.03);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#071026);color:#e6eef8}
-    .app{display:grid;grid-template-columns:320px 1fr;gap:18px;height:100vh;padding:18px}
-    /* Left column: contacts */
-    .sidebar{background:var(--panel);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:grid;place-items:center;font-weight:700;color:white}
-    .brand h1{font-size:16px;margin:0}
-    .search{position:relative}
-    .search input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit}
-    .contacts{overflow:auto;flex:1;padding-right:6px}
-    .contact{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;cursor:pointer}
-    .contact:hover{background:rgba(255,255,255,0.02)}
-    .avatar{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#374151,#1e293b);display:grid;place-items:center;font-weight:700}
-    .contact .meta{flex:1}
-    .contact .meta .name{font-weight:600}
-    .contact .meta .preview{font-size:13px;color:var(--muted)}
-    .new-chat{display:flex;gap:8px;align-items:center}
-    .btn{padding:8px 12px;border-radius:10px;background:var(--accent);border:none;color:white;cursor:pointer}
-
-    /* Main area */
-    .main{display:flex;flex-direction:column;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:14px;padding:12px}
-    .chat-header{display:flex;align-items:center;gap:12px;padding:10px}
-    .chat-header .title{font-weight:700}
-    .messages{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
-    .msg-row{display:flex;gap:10px;align-items:flex-end}
-    .msg-row.me{justify-content:flex-end}
-    .bubble{max-width:65%;padding:10px 12px;border-radius:12px;background:var(--msg-friend);line-height:1.3}
-    .bubble.me{background:linear-gradient(90deg,var(--accent),#06b6d4);color:#071023}
-    .time{font-size:11px;color:var(--muted);margin-top:6px}
-
-    .composer{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(255,255,255,0.03)}
-    .composer input{flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
-    .composer .send{min-width:92px}
-
-    /* empty state */
-    .empty{display:grid;place-items:center;flex:1;color:var(--muted)}
-
-    /* small screens: stack */
-    @media (max-width:880px){
-      .app{grid-template-columns:1fr}
-      .sidebar{order:2}
-      .main{order:1}
-      .contacts{max-height:260px}
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Simple Chat</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:Arial, sans-serif;}  
+  body{background:#0f111a;color:#fff;height:100vh;display:flex;}
+  .sidebar{width:280px;background:#151823;border-right:1px solid #222;padding:15px;display:flex;flex-direction:column;}
+  .search input{width:100%;padding:10px;border-radius:8px;border:none;background:#1b1f2c;color:#fff;margin-bottom:10px;}
+  .contacts{flex:1;overflow-y:auto;margin-top:10px;}
+  .contact{padding:10px;background:#1b1f2c;margin-bottom:8px;border-radius:10px;cursor:pointer;}   
+  .contact:hover{background:#252a3a;}
+  .active{background:#2d3250!important;}
+  .chat{flex:1;display:flex;flex-direction:column;}
+  .messages{flex:1;padding:20px;overflow-y:auto;}
+  .msg{margin-bottom:15px;}
+  .me{color:#7fc4ff;}
+  .friend{color:#f2a2ff;}
+  .inputArea{display:flex;padding:15px;border-top:1px solid #222;} 
+  .inputArea input{flex:1;padding:12px;border-radius:8px;border:none;background:#1b1f2c;color:#fff;} 
+  .inputArea button{margin-left:10px;padding:12px 18px;border:none;border-radius:8px;background:#4c6ef5;color:#fff;cursor:pointer;} 
+  .addFriend{display:flex;margin-top:10px;} 
+  .addFriend input{flex:1;padding:10px;border-radius:8px;border:none;background:#1b1f2c;color:#fff;} 
+  .addFriend button{margin-left:8px;padding:10px;background:#4c6ef5;border:none;border-radius:8px;color:#fff;cursor:pointer;} 
+</style>
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="logo">SC</div>
-        <div>
-          <h1>SimpleChat</h1>
-          <div style="font-size:12px;color:var(--muted)">Только текст. Без звонков, смайликов и гиф.</div>
-        </div>
-      </div>
 
-      <div class="search">
-        <input id="searchInput" placeholder="Поиск друзей по имени или ID..." />
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:-6px;margin-bottom:4px">
-        Ваш ID: <span id="myId" style="color:var(--accent);font-weight:600"></span>
-      </div>
-
-      <div class="contacts" id="contactsList"></div>
-
-      <div style="display:flex;gap:8px;align-items:center">
-        <input id="newFriendName" placeholder="Новое имя друга" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit" />
-        <button class="btn" id="addFriendBtn">Добавить</button>
-      </div>
-    </aside>
-
-    <main class="main">
-      <div class="chat-header" id="chatHeader">
-        <div class="avatar" id="chatAvatar">?</div>
-        <div style="flex:1">
-          <div class="title" id="chatTitle">Выберите друга</div>
-          <div class="status" id="chatStatus" style="font-size:13px;color:var(--muted)"></div>
-        </div>
-        <div style="font-size:13px;color:var(--muted)">Текст только</div>
-      </div>
-
-      <div class="messages" id="messagesArea">
-        <div class="empty" id="emptyState">Выберите чат слева или создайте нового друга.</div>
-      </div>
-
-      <div class="composer">
-        <input id="messageInput" placeholder="Напишите сообщение и нажмите Enter" autocomplete="off" />
-        <button class="btn send" id="sendBtn">Отправить</button>
-      </div>
-    </main>
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="search">
+    <input id="searchInput" placeholder="Поиск друзей по имени или ID..." />
   </div>
 
-  <script>
-    /* Simple client-side chat app.
-       - Multiple friends (contacts)
-       - Local messages stored in localStorage
-       - Strips emojis and images/gifs from input
-       - Text only, no media, no calls
-    */
+  <div style="font-size:14px;margin-bottom:10px;color:#999;">
+    Ваш ID: <span id="myId" style="color:#4c6ef5;font-weight:bold"></span>
+  </div>
 
-    // Utilities
-    const uid = () => Math.random().toString(36).slice(2,10);
-    const nowTime = () => new Date().toLocaleString();
+  <div class="addFriend">
+    <input id="friendName" placeholder="Имя друга" />
+    <button id="addFriendBtn">+</button>
+  </div>
 
-    // Remove emoji and many pictographs. This is a best-effort filter.
-    function stripEmojis(text){
-      // Remove variation selectors, emoji ranges and common pictographs
-      return text
-        .replace(/([\u2700-\u27BF])/g, '')
-        .replace(/([\uE000-\uF8FF])/g, '')
-        .replace(/([\uD83C-\uDBFF][\uDC00-\uDFFF])/g, '')
-        .replace(/[\uFE0F]/g,'') // variation selector
-        .replace(/[:*]\\/g,'')
-        ;
-    }
+  <div class="contacts" id="contacts"></div>
+</div>
 
-    // Also remove markup that could embed images or gifs
-    function sanitizeText(text){
-      let t = text.replace(/<[^>]*>/g,''); // strip tags
-      t = stripEmojis(t);
-      // remove typical links to gifs/images (best-effort)
-      t = t.replace(/https?:\\/\\/\\S+\\.(gif|png|jpg|jpeg|webp)(\\?\\S*)?/ig,'');
-      return t.trim();
-    }
+<!-- CHAT AREA -->
+<div class="chat">
+  <div class="messages" id="messages"></div>
+  <div class="inputArea">
+    <input id="msgInput" placeholder="Написать сообщение..." />
+    <button id="sendBtn">Отправить</button>
+  </div>
+</div>
 
-    // Storage wrapper
-    const STORAGE_KEY = 'simplechat:state_v1';
-    function loadState(){
-      try{const raw = localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):null}catch(e){return null}
-    }
-    function saveState(state){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+<script>
+// ---------------------------
+// STORAGE
+// ---------------------------
+let state = JSON.parse(localStorage.getItem("simpleChat")) || {
+  myId: null,
+  contacts: [],
+  messages: {}
+};
 
-    // Default state when first opened
-    const defaultState = {
-      me: {id: 'me', name: 'Вы'},
-      contacts: [
-        {id: 'c1', name: 'Алекс'},
-        {id: 'c2', name: 'Мария'},
-        {id: 'c3', name: 'Игорь'}
-      ],
-      messages: {
-        // contactId: [ {id, from, text, time} ]
-        c1: [ {id:uid(),from:'c1',text:'Привет! Как дела?',time:nowTime()} ],
-        c2: [ {id:uid(),from:'c2',text:'Добро пожаловать в SimpleChat',time:nowTime()} ]
-      },
-      activeContact: null
-    };
+function saveState(){ localStorage.setItem("simpleChat", JSON.stringify(state)); }
+function uid(){ return Math.random().toString(36).substring(2,10); }
 
-    let state = loadState() || defaultState;
+// ---------------------------
+// GENERATE PROFILE ID
+// ---------------------------
+if(!state.myId){
+  state.myId = "id_" + uid();
+  saveState();
+}
 
-    // UI elements
-    const contactsList = document.getElementById('contactsList');
-    const messagesArea = document.getElementById('messagesArea');
-    const chatTitle = document.getElementById('chatTitle');
-    const chatStatus = document.getElementById('chatStatus');
-    const chatAvatar = document.getElementById('chatAvatar');
-    const emptyState = document.getElementById('emptyState');
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const searchInput = document.getElementById('searchInput');
-    const newFriendName = document.getElementById('newFriendName');
-    const addFriendBtn = document.getElementById('addFriendBtn');
+document.getElementById("myId").textContent = state.myId;
 
-    function renderContacts(filter=''){
-      contactsList.innerHTML='';
-      const list = state.contacts.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
-      for(const c of list){
-        const last = (state.messages[c.id]||[]).slice(-1)[0];
-        const el = document.createElement('div'); el.className='contact'; el.dataset.id=c.id;
-        el.innerHTML = `<div class="avatar">${c.name.slice(0,2).toUpperCase()}</div>
-                        <div class="meta"><div class="name">${c.name}</div><div class="preview">${last?last.text.slice(0,38):'Нет сообщений'}</div></div>`;
-        el.addEventListener('click',()=>selectContact(c.id));
-        contactsList.appendChild(el);
-      }
-    }
+// ---------------------------
+// RENDER CONTACT LIST
+// ---------------------------
+let activeChat = null;
+const contactsDiv = document.getElementById("contacts");
 
-    function selectContact(id){
-      state.activeContact = id; saveState(state);
-      const contact = state.contacts.find(x=>x.id===id);
-      chatTitle.textContent = contact.name;
-      chatAvatar.textContent = contact.name.slice(0,2).toUpperCase();
-      chatStatus.textContent = 'Онлайн';
-      renderMessages();
-    }
-
-    function renderMessages(){
-      messagesArea.innerHTML='';
-      const id = state.activeContact;
-      if(!id){ messagesArea.appendChild(emptyState); emptyState.style.display='grid'; return; }
-      emptyState.style.display='none';
-      const msgs = state.messages[id] || [];
-      for(const m of msgs){
-        const row = document.createElement('div');
-        row.className = 'msg-row '+(m.from==='me' ? 'me':'');
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble '+(m.from==='me' ? 'me':'');
-        bubble.textContent = m.text;
-        const time = document.createElement('div'); time.className='time'; time.textContent = m.time;
-        const container = document.createElement('div'); container.appendChild(bubble); container.appendChild(time);
-        row.appendChild(container);
-        messagesArea.appendChild(row);
-      }
-      // scroll to bottom
-      setTimeout(()=>messagesArea.scrollTop = messagesArea.scrollHeight,10);
-    }
-
-    function sendMessage(){
-      if(!state.activeContact) return alert('Выберите чат слева.');
-      let raw = messageInput.value || '';
-      let text = sanitizeText(raw);
-      if(!text){
-        // Determine reason: either empty or contained only emoji/gifs.
-        if(raw.trim().length===0) return;
-        alert('Сообщение пустое или содержит только запрещённые символы (эмодзи/гиф/медиа).');
-        messageInput.value='';
-        return;
-      }
-      const m = {id:uid(),from:'me',text:text,time:nowTime()};
-      state.messages[state.activeContact] = state.messages[state.activeContact] || [];
-      state.messages[state.activeContact].push(m);
-      saveState(state);
-      messageInput.value='';
-      renderMessages();
-      renderContacts(searchInput.value);
-
-      // Simulate friend reply (optional) - short, can be removed.
-      setTimeout(()=>{
-        const reply = {id:uid(),from:state.activeContact,text:'(авто) Я получил ваше сообщение: "'+text.slice(0,60)+'"',time:nowTime()};
-        state.messages[state.activeContact].push(reply);
-        saveState(state);
-        renderMessages();
-        renderContacts(searchInput.value);
-      },800);
-    }
-
-    // Add friend
-    addFriendBtn.addEventListener('click',()=>{
-      const name = newFriendName.value.trim(); if(!name) return; const id = 'id_'+uid();
-      state.contacts.push({id,name}); state.messages[id]=[]; saveState(state); newFriendName.value=''; renderContacts(searchInput.value);
+function renderContacts(filter=""){
+  contactsDiv.innerHTML = "";
+  state.contacts
+    .filter(c=> c.name.toLowerCase().includes(filter.toLowerCase()) || c.id.includes(filter))
+    .forEach(c=>{
+      const el = document.createElement("div");
+      el.className = "contact" + (activeChat===c.id?" active":"");
+      el.textContent = c.name + " (" + c.id + ")";
+      el.onclick = ()=>{ activeChat = c.id; renderContacts(filter); renderMessages(); };
+      contactsDiv.appendChild(el);
     });
+}
 
-    // Add friend by ID
-    function addFriendById(id){
-      if(state.contacts.some(c=>c.id===id)) return alert('Этот друг уже есть.');
-      state.contacts.push({id,name:('Friend '+id.slice(-4))});
-      state.messages[id]=[];
-      saveState(state);
-      renderContacts(searchInput.value);
+renderContacts();
+
+// ---------------------------
+// ADD FRIEND BY NAME
+// ---------------------------
+document.getElementById("addFriendBtn").onclick = ()=>{
+  const name = friendName.value.trim();
+  if(!name) return;
+  const id = "id_" + uid();
+
+  state.contacts.push({id,name});
+  state.messages[id] = [];
+  saveState();
+
+  friendName.value="";
+  renderContacts();
+};
+
+// ---------------------------
+// SEARCH FRIEND BY ID
+// ---------------------------
+document.getElementById("searchInput").oninput = function(){
+  const v = this.value.trim();
+
+  if(/^id_[a-z0-9]{6,}$/.test(v)){
+    if(!state.contacts.some(x=>x.id===v)){
+      state.contacts.push({id:v,name:"Friend_"+v.slice(-4)});
+      state.messages[v] = [];
+      saveState();
     }
+  }
 
-    // Search by ID
-    searchInput.addEventListener('input',()=>{
-      const v = searchInput.value.trim();
-      if(/^id_[a-z0-9]{6,}$/.test(v)) addFriendById(v);
-      renderContacts(searchInput.value);
-    });('click',()=>{
-      const name = newFriendName.value.trim(); if(!name) return; const id = 'c_'+uid();
-      state.contacts.push({id,id,name}); state.messages[id]=[]; saveState(state); newFriendName.value=''; renderContacts(searchInput.value);
-    });
+  renderContacts(v);
+};
 
-    // Send on button or Enter
-    sendBtn.addEventListener('click',sendMessage);
-    messageInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } });
+// ---------------------------
+// RENDER MESSAGES
+// ---------------------------
+function renderMessages(){
+  const box = document.getElementById("messages");
+  box.innerHTML = "";
+  if(!activeChat) return;
 
-    // Search
-    searchInput.addEventListener('input',()=>renderContacts(searchInput.value));
+  (state.messages[activeChat] || []).forEach(m=>{
+    const d=document.createElement("div");
+    d.className="msg " + (m.from==="me"?"me":"friend");
+    d.textContent = m.text;
+    box.appendChild(d);
+  });
 
-    // Initial render
-    document.getElementById('myId').textContent = 'id_'+(state.myId || (state.myId=uid(), saveState(state), state.myId));
-    renderContacts();
-    if(state.contacts.length && !state.activeContact) selectContact(state.contacts[0].id);
+  box.scrollTop = box.scrollHeight;
+}
 
-    // Expose for debugging
-    window.simpleChat = {state, saveState, loadState};
-  </script>
+// ---------------------------
+// SEND MESSAGE
+// ---------------------------
+function send(){
+  if(!activeChat) return;
+  const input=document.getElementById("msgInput");
+  const txt=input.value.trim();
+  if(!txt) return;
+
+  state.messages[activeChat].push({from:"me",text:txt});
+  saveState();
+
+  input.value="";
+  renderMessages();
+}
+
+document.getElementById("sendBtn").onclick = send;
+document.getElementById("msgInput").onkeydown = e=>{ if(e.key==="Enter") send(); };
+
+</script>
 </body>
 </html>
